@@ -15,25 +15,25 @@
 ```
     mkdir -p output
     docker run --rm \
-        -v ~/asx-output:/output \
-        -e OUT_DIR=/output \
-        nddminhh/asx-dividend-scraper:latest
+    -v "$(pwd)/output:/output" \
+    -e OUT_DIR=/output \
+    nddminhh/asx-dividend-scraper:latest
 ```
 
 ### Windows PowerShell
 ```
     mkdir output -ea 0
     docker run --rm `
-        -v "${PWD}\output:/output" `
-        -e OUT_DIR=/output `
-        nddminhh/asx-dividend-scraper:latest
+    -v "${PWD}\output:/output" `
+    -e OUT_DIR=/output `
+    nddminhh/asx-dividend-scraper:latest
 ```
 
 ### Windows CMD
 ```
     mkdir output
-    docker run --rm \
-        -v "$(pwd)/output:/output" \
-        -e OUT_DIR=/output \
-        nddminhh/asx-dividend-scraper:latest
+    docker run --rm ^
+    -v "%cd%\output:/output" ^
+    -e OUT_DIR=/output ^
+    nddminhh/asx-dividend-scraper:latest
 ```

@@ -1,0 +1,8 @@
+version: '3.8'
+services:
+  asx-scraper:
+    build: .
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONUNBUFFERED=1

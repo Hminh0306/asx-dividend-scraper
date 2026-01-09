@@ -15,9 +15,15 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 UPCOMING_URL = "https://www.marketindex.com.au/upcoming-dividends"
 ASX_URL = "https://www.marketindex.com.au/asx/{}"
 
-OUT_DIR = os.getenv("OUT_DIR", "./output")  
+# Get default 
+def get_default_output_dir():
+    env_dir = os.getenv("OUTPUT_DIR")
+    if env_dir:
+        return Path(env_dir).expanduser().resolve()
 
-out_dir = Path(OUT_DIR).resolve()
+    return (Path.home() / "Downloads").resolve()
+
+out_dir = get_default_output_dir()
 out_dir.mkdir(parents=True, exist_ok=True)
 
 def parse_international_date(date_str):

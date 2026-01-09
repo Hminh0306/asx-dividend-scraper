@@ -14,7 +14,10 @@
 ### MacOS/ Linux (bash/ zsh)
 ```
     mkdir -p output
-    docker run --rm -v "$(pwd)/output:/output" asx-scraper
+    docker run --rm \
+        -v ~/asx-output:/output \
+        -e OUT_DIR=/output \
+        nddminhh/asx-dividend-scraper:latest
 ```
 
 ### Windows PowerShell

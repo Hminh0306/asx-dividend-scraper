@@ -2,3 +2,4 @@ browser_session/
 *.csv
 venv/
 .DS_Store
+./output

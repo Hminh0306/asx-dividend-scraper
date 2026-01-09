@@ -1,6 +1,4 @@
 browser_session/
-__pycache__/
 *.csv
-.env
 venv/
 .DS_Store

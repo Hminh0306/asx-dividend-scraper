@@ -1,20 +1,19 @@
-# Use the correct version we identified earlier
-FROM mcr.microsoft.com/playwright/python:v1.57.0-noble
+FROM python:3.11-slim
 
+ENV PYTHONUNBUFFERED=1
 WORKDIR /app
 
-# Upgrade pip
-RUN pip install --no-cache-dir --upgrade pip
+# Minimal OS deps (add more only if your crawler needs them)
+RUN apt-get update && apt-get install -y \
+    ca-certificates curl \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install all required libraries
-RUN pip install --no-cache-dir pandas crawl4ai beautifulsoup4 lxml html5lib playwright-stealth
-
-# FIX: Use the new setup command instead of the old module path
-RUN crawl4ai-setup
-
-# Ensure Playwright browsers are ready
-RUN playwright install chromium --with-deps
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-CMD ["python", "-u", "scraper_playwright.py"]
+ENV OUT_DIR=/output
+RUN mkdir -p /output
+
+CMD ["python", "scraper_playwright.py"]

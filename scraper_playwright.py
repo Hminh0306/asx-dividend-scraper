@@ -2,9 +2,11 @@ import asyncio
 import pandas as pd
 import sys
 import io
+import os
 import random
 from datetime import datetime
 from crawl4ai import AsyncWebCrawler, CrawlerRunConfig, CacheMode
+from pathlib import Path
 from bs4 import BeautifulSoup
 
 # Set encoding for Windows Terminal
@@ -12,6 +14,11 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 UPCOMING_URL = "https://www.marketindex.com.au/upcoming-dividends"
 ASX_URL = "https://www.marketindex.com.au/asx/{}"
+
+OUT_DIR = os.getenv("OUT_DIR", "./output")  
+
+out_dir = Path(OUT_DIR).resolve()
+out_dir.mkdir(parents=True, exist_ok=True)
 
 def parse_international_date(date_str):
     """Converts date formats to YYYY-MM-DD."""
@@ -130,9 +137,11 @@ async def main():
 
     # Export results
     if results:
+        csv_path = out_dir / "asx_dividends_crawl4ai.csv" 
         df = pd.DataFrame(results)
-        df.to_csv("asx_dividends_crawl4ai.csv", index=False, encoding='utf-8-sig')
+        df.to_csv(csv_path, index=False, encoding='utf-8-sig')
         print(f"\n🎉 Success! Processed {len(results)} companies.")
+        print(f"\n🎉 [SAVE COMPLETED] Saved CSV to: {csv_path.resolve()}")
 
 if __name__ == "__main__":
     asyncio.run(main())

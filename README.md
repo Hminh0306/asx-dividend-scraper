@@ -13,27 +13,21 @@
 ## 2. Execute docker
 ### MacOS/ Linux (bash/ zsh)
 ```
-    mkdir -p output
     docker run --rm \
-        -v "$(pwd)/output:/output" \
-        -e OUT_DIR=/output \
+        -v "$HOME/Downloads:/root/Downloads" \
         nddminhh/asx-dividend-scraper:latest
 ```
 
 ### Windows PowerShell
 ```
-    mkdir output -ea 0
     docker run --rm `
-        -v "${PWD}\output:/output" `
-        -e OUT_DIR=/output `
+        -v "$env:USERPROFILE\Downloads:/root/Downloads" `
         nddminhh/asx-dividend-scraper:latest
 ```
 
 ### Windows CMD
 ```
-    mkdir output
     docker run --rm ^
-        -v "%cd%\output:/output" ^
-        -e OUT_DIR=/output ^
+        -v "%USERPROFILE%\Downloads:/root/Downloads" ^
         nddminhh/asx-dividend-scraper:latest
 ```

@@ -11,6 +11,9 @@
 ```
 
 ## 2. Execute docker
+### Notes
+- .csv file will be saved inside your machine Downloads directory
+- Please take a look at your Downloads directory after the code completion for your long desired file
 ### MacOS/ Linux (bash/ zsh)
 ```
     docker run --rm \

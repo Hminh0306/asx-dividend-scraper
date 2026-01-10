@@ -1,14 +1,41 @@
-# Crawl4ai ASX Upcoming Dividends 
-## Note
-- Login to Docker before reading further
-```
-    docker login
+# ASX Upcoming Dividends Scraper  
+*A Crawl4AI & Playwright-based data pipeline for scraping ASX upcoming dividend data and exporting it to CSV.*
+
+---
+
+## Overview
+
+This project implements an **end-to-end data scraping pipeline** that:
+- Scrapes **upcoming ASX dividend data**
+- Cleans and structures the data
+- Exports results into a **readable CSV file**
+
+The pipeline can be run **locally** (via Python) or **containerised** (via Docker) for consistent execution across environments.
+
+---
+
+## Prerequisites
+
+### General
+- Python >= **3.9+**
+- Git
+- Internet connection
+
+### Docker (optional but recommended)
+- Docker Desktop installed and running
+- Logged in to Docker Hub
+
+```bash
+docker login
 ```
 
-# Local machine Installation
-## 1. Pull repository down
+---
+
+# Local Installation
+## 1. Clone the repository
 ```
-    git pull origin https://github.com/Hminh0306/asx-dividend-scraper
+    git clone https://github.com/Hminh0306/asx-dividend-scraper.git
+    cd asx-dividend-scraper
 ```
 
 ## 2. Create virtual environment
@@ -16,11 +43,11 @@
     python -m venv venv
 ```
 ## 3. Enter the venv
-- MacOS
+MacOS/ Linux
 ```
     source venv/bin/activate
 ```
-- Windows
+Windows
 ```
     venv\Scripts\activate
 ```
@@ -33,7 +60,18 @@
     python scraper_playwright.py
 ```
 
+*The generated CSV file will be saved to the default output directory defined in the script.*
+
+---
+
 # Docker Installation
+Running via Docker ensures:
+
+- No local dependency conflicts
+
+- Identical behaviour across machines
+
+- Easy repeatability
 
 ## 1. Pull image down 
 ```

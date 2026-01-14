@@ -1,7 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Files
 browser_session/
 *.csv
-venv/
-.DS_Store
-./output
 
+# Virtual environment
+venv/
+
+# OS
+.DS_Store
+
+# Secret keys/ credentials
+service_account.json
+*.secrete.json
 .env
+*.env
+credentials.json

@@ -1,6 +1,16 @@
-browser_session/
+# Python
 __pycache__/
-*.csv
-.env
+*.py[cod]
 venv/
+.env
+
+# Docker
+.dockerignore
+
+# Data (Không nên push file kết quả lên Git)
+*.csv
+*.tar
+
+# OS
 .DS_Store
+Thumbs.db

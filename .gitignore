@@ -3,3 +3,5 @@ browser_session/
 venv/
 .DS_Store
 ./output
+
+.env

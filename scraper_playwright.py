@@ -4,10 +4,12 @@ import sys
 import io
 import os
 import random
+import datetime
 from datetime import datetime
 from crawl4ai import AsyncWebCrawler, CrawlerRunConfig, CacheMode
 from pathlib import Path
 from bs4 import BeautifulSoup
+from sheet_functions import overwrite_sheet_with_df, test_sheet_access
 
 # Set encoding for Windows Terminal
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
@@ -15,16 +17,18 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 UPCOMING_URL = "https://www.marketindex.com.au/upcoming-dividends"
 ASX_URL = "https://www.marketindex.com.au/asx/{}"
 
-# Get default 
-def get_default_output_dir():
-    env_dir = os.getenv("OUTPUT_DIR")
+# Get history_record directory location and make sure it exists 
+def get_history_record_dir():
+    env_dir = os.getenv("HISTORY_DIR")
     if env_dir:
         return Path(env_dir).expanduser().resolve()
 
+    # Else if not existed, save to Downloads
     return (Path.home() / "Downloads").resolve()
 
-out_dir = get_default_output_dir()
+out_dir = get_history_record_dir()
 out_dir.mkdir(parents=True, exist_ok=True)
+
 
 def parse_international_date(date_str):
     """Converts date formats to YYYY-MM-DD."""
@@ -52,6 +56,9 @@ def clean_percent_to_decimal(text):
     """Converts percentage string to decimal (e.g., 100% -> 1.0)."""
     val = clean_to_number(text)
     return val / 100 if val is not None else None
+
+# def main():
+#     test_sheet_access()
 
 async def main():
     results = []
@@ -143,11 +150,25 @@ async def main():
 
     # Export results
     if results:
-        csv_path = out_dir / "asx_dividends_crawl4ai.csv" 
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        csv_path = out_dir / f"asx_dividend_{timestamp}.csv" 
+
+        # DataFrame object
         df = pd.DataFrame(results)
+
+        # Save current save to history directory
         df.to_csv(csv_path, index=False, encoding='utf-8-sig')
-        print(f"\n🎉 Success! Processed {len(results)} companies.")
-        print(f"\n🎉 [SAVE COMPLETED] Saved CSV to: {csv_path.resolve()}")
+        print(f"\n🎉 Success! Processed {len(results)} and saved to {csv_path}.")
+
+        # Export results -> Google Sheets
+        overwrite_sheet_with_df(df)
+        print(f"\n✅ Updated Google Sheet with {len(results)} rows.")
+        
+        # print(f"\n🎉 [SAVE COMPLETED] Saved CSV to: {csv_path.resolve()}")
+    else:
+        print("NO results found")
+
+
 
 if __name__ == "__main__":
     asyncio.run(main())

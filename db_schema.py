@@ -45,7 +45,7 @@ def init_db(db_path: str) -> Path:
 
             FOREIGN KEY (run_id) REFERENCES scrape_runs(run_id)
         );
-
+                           
         CREATE INDEX IF NOT EXISTS idx_div_code        ON dividends(code);
         CREATE INDEX IF NOT EXISTS idx_div_ex_date     ON dividends(ex_date);
         CREATE INDEX IF NOT EXISTS idx_div_scraped_at  ON dividends(scraped_at);

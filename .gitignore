@@ -21,3 +21,6 @@ credentials.json
 
 # History record
 ./history_record
+
+# Database 
+./database

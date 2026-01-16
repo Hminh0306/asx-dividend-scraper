@@ -16,10 +16,11 @@ The pipeline can be run **locally** (via Python) or **containerised** (via Docke
 
 ## Prerequisites
 
-### General
+### General (up-to 16/1/2026)
 - Python >= **3.9+**
 - Git
 - Internet connection
+- Sqlite3 >=3.51
 
 ### Docker (optional but recommended)
 - Docker Desktop installed and running

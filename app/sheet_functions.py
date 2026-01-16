@@ -6,8 +6,6 @@ import gspread
 from dotenv import load_dotenv
 from google.oauth2.service_account import Credentials
 
-
-
 load_dotenv(Path(__file__).resolve().parent / ".env")
 
 """
@@ -50,19 +48,3 @@ def overwrite_sheet_with_df(df: pd.DataFrame):
     values = [df.columns.tolist()] + df.astype(object).where(pd.notnull(df), "").values.tolist()
     ws.clear()
     ws.update(values, value_input_option="RAW")
-
-def test_sheet_access():
-    """
-    Test for whether the service account can access the Google Sheet
-    Raises a clear error if permission or config are wrong
-    """
-    ws = get_worksheet()
-
-    title = ws.title
-    rows = ws.row_count
-    cols = ws.col_count
-
-    print("✅ Google Sheets access OK")
-    print(f"   Sheet title : {title}")
-    print(f"   Size        : {rows} rows × {cols} columns")
-    return True

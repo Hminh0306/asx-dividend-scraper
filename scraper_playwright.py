@@ -10,7 +10,6 @@ from datetime import datetime
 from crawl4ai import AsyncWebCrawler, CrawlerRunConfig, CacheMode
 from pathlib import Path
 from bs4 import BeautifulSoup
-from app.sheet_functions import overwrite_sheet_with_df, test_sheet_access
 
 # Set encoding for Windows Terminal
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
@@ -65,6 +64,38 @@ def clean_to_number(text):
 def clean_percent_to_decimal(text):
     val = clean_to_number(text)
     return val / 100 if val is not None else None
+
+def upload_to_firebase(items: list[dict], today_str: str):
+    if not db:
+        print("⚠️ Firestore disabled.")
+        return
+
+    for item in items:
+        code = item["Code"]
+        doc_ref = db.collection("asx_dividends").document(code)
+
+        update_payload = {k: v for k, v in item.items() if v is not None}
+
+        try:
+            doc_snap = doc_ref.get()
+            if doc_snap.exists:
+                old_data = doc_snap.to_dict()
+                for key in ["Price", "4W Volume", "Total Value"]:
+                    if item.get(key) is None and old_data.get(key) is not None:
+                        item[key] = old_data.get(key)
+                        update_payload[key] = old_data.get(key)
+
+                doc_ref.update(update_payload)
+            else:
+                doc_ref.set(item)
+
+            # Save daily snapshot (history)
+            doc_ref.collection("history").document(today_str).set(update_payload)
+            print(f"🔥 [Firestore] Synced {code} & Saved History {today_str}")
+
+        except Exception as e:
+            print(f"❌ Error at {code}: {e}")
+
 
 # --- MAIN SCRAPER ---
 async def scraper():
@@ -153,49 +184,15 @@ async def scraper():
                     "last_updated": firestore.SERVER_TIMESTAMP if db else datetime.now().isoformat()
                 }
 
-                # --- FIREBASE SYNC (SMART UPDATE) ---
-                # --- FIREBASE SYNC (CÁCH 2: LƯU LỊCH SỬ THEO NGÀY & VÁ DỮ LIỆU) ---
-                if db:
-                    # 1. Tham chiếu đến Document chính của mã chứng khoán
-                    doc_ref = db.collection("asx_dividends").document(code)
-                    
-                    # Lọc bỏ các giá trị None cho payload cập nhật
-                    update_payload = {k: v for k, v in data_item.items() if v is not None}
-                    
-                    try:
-                        doc_snap = doc_ref.get()
-                        if doc_snap.exists:
-                            # A. VÁ DỮ LIỆU: Nếu bản crawl hôm nay bị None, lấy dữ liệu cũ từ Firebase đắp vào
-                            old_data = doc_snap.to_dict()
-                            for key in ["Price", "4W Volume", "Total Value"]:
-                                if data_item.get(key) is None and old_data.get(key) is not None:
-                                    data_item[key] = old_data.get(key)
-                                    # Cập nhật luôn vào payload để lưu lịch sử hôm nay có số đẹp
-                                    update_payload[key] = old_data.get(key)
-                            
-                            # B. Cập nhật Document chính (Latest Data)
-                            doc_ref.update(update_payload)
-                        else:
-                            # C. Mã mới hoàn toàn
-                            doc_ref.set(data_item)
-
-                        # 2. LƯU LỊCH SỬ: Tạo một bản ghi riêng trong sub-collection 'history'
-                        # Dùng ngày hôm nay làm ID document để không bị trùng
-                        doc_ref.collection("history").document(today_str).set(update_payload)
-                        
-                        print(f"🔥 [Firestore] Synced {code} & Saved History for {today_str}")
-
-                    except Exception as fe:
-                        print(f"❌ Firestore error for {code}: {fe}")
-
                 results.append(data_item)
-                print(f"✅ [{i+1}] {code:5} | Price: {data_item['Price']} | Vol: {data_item['4W Volume']}")
 
+                print(f"✅ [{i+1}] {code:5} | Price: {price_num} | Vol: {vol_num}")
                 await asyncio.sleep(random.uniform(3.0, 5.0))
 
             except Exception as e:
                 print(f"⚠️ Error at row {i} ({code}): {e}")
     
+    print(f"Completed scraping at {datetime.now()}")
     return results
 
 async def main():
@@ -203,25 +200,8 @@ async def main():
     data_results = await scraper()
     
     if data_results:
-        df = pd.DataFrame(data_results)
-        
-        # 2. Save Local History (CSV)
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        csv_path = out_dir / f"asx_dividends_{timestamp}.csv"
-        df.to_csv(csv_path, index=False, encoding='utf-8-sig')
-        print(f"📍 Saved CSV to: {csv_path}")
-
-        # 3. Overwrite Google Sheet
-        try:
-            sheet_df = df.copy()
-            # Xử lý cột last_updated cho Google Sheets (vì Sheets không hiểu Firestore Timestamp)
-            if 'last_updated' in sheet_df.columns:
-                sheet_df['last_updated'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                
-            overwrite_sheet_with_df(sheet_df)
-            print("🚀 Google Sheets updated successfully!")
-        except Exception as e:
-            print(f"❌ Google Sheets update failed: {e}")
+        today_str = datetime.now().strftime("%Y-%m-%d")
+        upload_to_firebase(data_results, today_str)
 
 if __name__ == "__main__":
     asyncio.run(main())

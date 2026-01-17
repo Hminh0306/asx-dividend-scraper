@@ -1,6 +1,5 @@
 import os
 from pathlib import Path
-
 import pandas as pd
 import gspread
 from dotenv import load_dotenv
@@ -11,9 +10,8 @@ load_dotenv(Path(__file__).resolve().parent / ".env")
 """
     Python file for Google Sheet modification functions
 """
-
 SHEET_ID=os.getenv("SHEET_ID")
-TAB_NAME=os.getenv("SHEET_TAB", "Sheet1")
+TAB_NAME=os.getenv("SHEET_TAB", "ASX-DIVIDEND-DAILY-REPORT")
 CREDS_PATH=os.getenv("GOOGLE_CREDS", "./service_account.json")
 
 def get_worksheet():
@@ -43,8 +41,58 @@ def get_worksheet():
         ws = sh.add_worksheet(title=tab_name, rows=1000, cols=30)
     return ws
 
-def overwrite_sheet_with_df(df: pd.DataFrame):
+def update_sheet(data_from_firebase):
+    if not data_from_firebase:
+        print("⚠️ No data provided to update_sheet().")
+        return
+
     ws = get_worksheet()
-    values = [df.columns.tolist()] + df.astype(object).where(pd.notnull(df), "").values.tolist()
+
+    crawl_date = data_from_firebase[0].get("Crawl Date", "")
+
+    df = pd.DataFrame(data_from_firebase)
+
+    # Remove Crawl Date from the table
+    if "Crawl Date" in df.columns:
+        df = df.drop(columns=["Crawl Date"])
+
+    preferred_order = [
+        "Code",
+        "Company",
+        "Ex Date",
+        "Pay Date",
+        "Amount",
+        "Franking",
+        "Yield",
+        "Price",
+        "4W Volume",
+        "Total Value",
+        "last_updated",
+    ]
+
+    ordered_cols = (
+        [c for c in preferred_order if c in df.columns]
+        + [c for c in df.columns if c not in preferred_order]
+    )
+    df = df[ordered_cols]
+
+    if "Code" in df.columns:
+        df = df.sort_values("Code", kind="stable")
+
+    # Keep numbers as numbers; replace NaN/None with ""
+    df = df.where(pd.notnull(df), "")
+
+    table_values = [df.columns.tolist()] + df.values.tolist()
+
     ws.clear()
-    ws.update(values, value_input_option="RAW")
+
+    # Crawl Date box
+    ws.update("A1", [[f"Crawl Date: {crawl_date}"]], value_input_option="RAW")
+    ws.format("A1", {"textFormat": {"bold": True}})
+
+    # Table starts at A3
+    start_row = 3
+    ws.resize(rows=start_row + len(table_values), cols=len(table_values[0]) if table_values else 1)
+    ws.update(f"A{start_row}", table_values, value_input_option="RAW")
+
+    print(f"✅ Google Sheet updated with {len(df)} rows.")

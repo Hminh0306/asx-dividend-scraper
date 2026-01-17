@@ -25,4 +25,4 @@ credentials.json
 ./history_record
 
 # Database 
-./database
+./database/*

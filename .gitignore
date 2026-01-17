@@ -15,6 +15,7 @@ venv/
 
 # Secret keys/ credentials
 service_account.json
+serviceAccountKey.json
 *.secrete.json
 .env
 *.env

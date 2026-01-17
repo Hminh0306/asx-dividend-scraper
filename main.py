@@ -1,12 +1,19 @@
 import asyncio
+# Import both functions from your module
 from app.scraper_functions import scraper
+from app.export_functions import save_to_db
 
-# Main function for scraping, write to database and display on Google Sheet
 async def main():
-    # [WARNING]: THIS IS TEST CODE ONLY FOR THE TYPE OF THE OUTPUT
+    print("Scraping started...")
     results = await scraper()
-    print(type(results))
-    print(results)
+    
+    print(f"Data type: {type(results)}")
+    
+    if results:
+        # Now Python knows where to find save_to_db
+        save_to_db(results)
+    else:
+        print("Scraper returned no data.")
 
 if __name__ == "__main__":
     asyncio.run(main())

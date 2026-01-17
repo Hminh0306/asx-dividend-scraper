@@ -14,8 +14,12 @@ venv/
 .DS_Store
 
 # Secret keys/ credentials
+## Google Sheet API service account key
 service_account.json
+
+## Firebase service account key
 serviceAccountKey.json
+
 *.secrete.json
 .env
 *.env

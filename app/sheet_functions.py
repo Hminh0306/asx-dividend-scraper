@@ -56,6 +56,10 @@ def update_sheet(data_from_firebase):
     if "Crawl Date" in df.columns:
         df = df.drop(columns=["Crawl Date"])
 
+    # Remove last_updated from the table
+    if "last_updated" in df.columns:
+        df = df.drop(columns=["last_updated"])
+
     preferred_order = [
         "Code",
         "Company",
@@ -66,8 +70,7 @@ def update_sheet(data_from_firebase):
         "Yield",
         "Price",
         "4W Volume",
-        "Total Value",
-        "last_updated",
+        "Total Value"
     ]
 
     ordered_cols = (
@@ -77,14 +80,15 @@ def update_sheet(data_from_firebase):
     df = df[ordered_cols]
 
     if "Code" in df.columns:
-        df = df.sort_values("Code", kind="stable")
+        df = df.sort_values("Ex Date", kind="stable")
 
     # Keep numbers as numbers; replace NaN/None with ""
     df = df.where(pd.notnull(df), "")
 
     table_values = [df.columns.tolist()] + df.values.tolist()
 
-    ws.clear()
+    # Only change from column A to column J
+    ws.batch_clear(["A:J"])
 
     # Crawl Date box
     ws.update("A1", [[f"Crawl Date: {crawl_date}"]], value_input_option="RAW")

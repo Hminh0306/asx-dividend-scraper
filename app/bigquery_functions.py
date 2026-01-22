@@ -12,10 +12,12 @@ load_dotenv()
 
 PROJECT_ID = os.getenv("BQ_PROJECT_ID")
 DATASET_ID = os.getenv("BQ_DATASET_ID")
-TABLE_NAME = os.getenv("BQ_TABLE_ID")
+MAIN_TABLE = os.getenv("BQ_MAIN_TABLE_ID")
+STAGING_TABLE = os.getenv("BQ_STAGING_TABLE_ID")
 
 client = bigquery.Client(project=PROJECT_ID)
-table_id = f"{PROJECT_ID}.{DATASET_ID}.{TABLE_NAME}"
+main_table_id = f"{PROJECT_ID}.{DATASET_ID}.{MAIN_TABLE}"
+staging_table_id = f"{PROJECT_ID}.{DATASET_ID}.{STAGING_TABLE}"
 
 
 # ---------- Helpers ----------
@@ -200,7 +202,7 @@ def upload_to_bigquery(data_crawled: List[Dict[str, Any]], today_str: str) -> No
     if "last_update" in df.columns:
         df["last_update"] = pd.to_datetime(df["last_update"], utc=True, errors="coerce")
 
-    print(f"📦 BigQuery load: {len(df)} rows → {table_id} (dropped {dropped})")
+    print(f"📦 BigQuery load: {len(df)} rows → {main_table_id} (dropped {dropped})")
 
     job_config = bigquery.LoadJobConfig(
         schema=[
@@ -220,11 +222,73 @@ def upload_to_bigquery(data_crawled: List[Dict[str, Any]], today_str: str) -> No
         write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
     )
 
-    load_job = client.load_table_from_dataframe(df, table_id, job_config=job_config)
+    load_job = client.load_table_from_dataframe(df, main_table_id, job_config=job_config)
     load_job.result()  # wait
 
-    print("✅ BigQuery load job completed.")
+    print(f"✅ BigQuery load job completed at {datetime.now()}.")
 
+def merge_to_bigquery(data_crawled: list[dict]):
+    """
+    1) Load current run into STAGING (truncate staging)
+    2) MERGE STAGING into MAIN on (crawl_date, code)
+       - MATCHED => UPDATE
+       - NOT MATCHED => INSERT
+    """
+    if not data_crawled:
+        print("⚠️ No data to merge_to_bigquery()")
+        return
+
+    rows = []
+    dropped = 0
+    for item in data_crawled:
+        r = _normalize_row(item)
+        if not r["crawl_date"] or not r["code"]:
+            dropped += 1
+            continue
+        rows.append(r)
+
+    if not rows:
+        print(f"⚠️ After normalization, 0 rows left (dropped {dropped}).")
+        return
+
+    df = pd.DataFrame(rows)
+
+    # Ensure pandas dtypes align for BigQuery load
+    df["crawl_date"] = pd.to_datetime(df["crawl_date"]).dt.date
+    df["ex_date"] = pd.to_datetime(df["ex_date"]).dt.date
+    df["pay_date"] = pd.to_datetime(df["pay_date"]).dt.date
+    df["last_update"] = pd.to_datetime(df["last_update"], utc=True, errors="coerce")
+
+    print(f"📦 Loading {len(df)} rows into staging: {staging_table_id} (dropped {dropped})")
+
+    load_cfg = bigquery.LoadJobConfig(
+        write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,  # staging is "this run only"
+    )
+    client.load_table_from_dataframe(df, staging_table_id, job_config=load_cfg).result()
+
+    merge_sql = f"""
+    MERGE `{main_table_id}` T
+    USING `{staging_table_id}` S
+    ON T.crawl_date = S.crawl_date AND T.code = S.code
+    WHEN MATCHED THEN UPDATE SET
+      company = S.company,
+      ex_date = S.ex_date,
+      pay_date = S.pay_date,
+      amount = S.amount,
+      franking = S.franking,
+      yield = S.yield,
+      price = S.price,
+      `4w_volume` = S.`4w_volume`,
+      total_value = S.total_value,
+      last_update = S.last_update
+    WHEN NOT MATCHED THEN
+      INSERT (crawl_date, code, company, ex_date, pay_date, amount, franking, yield, price, `4w_volume`, total_value, last_update)
+      VALUES (S.crawl_date, S.code, S.company, S.ex_date, S.pay_date, S.amount, S.franking, S.yield, S.price, S.`4w_volume`, S.total_value, S.last_update)
+    """
+
+    print("🔁 Running MERGE into main table…")
+    client.query(merge_sql).result()
+    print(f"✅ MERGE complete: staging → {main_table_id}")
 
 # ---------- Connection ----------
 def test_bq_connection():

@@ -49,6 +49,20 @@ def clean_percent_to_decimal(text):
 
 # --- MAIN SCRAPE FUNCTION --- 
 async def scraper():
+    """
+    Scrape information from marketindex.com.au/upcoming-dividends and individual codes
+    Return list of dictionary containing information of each code in the columns:
+        Code
+        Company
+        Ex_date
+        Franking
+        Pay_date
+        Yield
+        Price
+        4W Volume 
+        Total Value
+        Last_updated
+    """
     results = []
     today_str = datetime.now().strftime("%Y-%m-%d")
 
@@ -142,4 +156,4 @@ async def scraper():
                 print(f"⚠️ Error at row {i} ({code}): {e}")
 
     print(f"Completed scraping at {datetime.now()}")
-    return results
+    return results # list[dict]

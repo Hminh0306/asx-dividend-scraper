@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 import pandas as pd
 import gspread
+from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from google.oauth2.service_account import Credentials
 
@@ -60,6 +61,13 @@ def update_sheet(data_from_firebase):
     if "last_updated" in df.columns:
         df = df.drop(columns=["last_updated"])
 
+    # Filter: Ex Date >= today + 2 
+    if "Ex Date" in df.columns:
+        today_plus_2 = (datetime.now() + timedelta(days=2)).date()
+        df["Ex Date Parsed"] = pd.to_datetime(df["Ex Date"], errors="coerce").dt.date
+        df = df[df["Ex Date Parsed"] >= today_plus_2]
+        df = df.drop(columns=["Ex Date Parsed"])
+
     preferred_order = [
         "Code",
         "Company",
@@ -95,8 +103,11 @@ def update_sheet(data_from_firebase):
     ws.format("A1", {"textFormat": {"bold": True}})
 
     # Table starts at A3
+    # Only clear/ write from A:J, NEVER TOUCH K+
     start_row = 3
-    ws.resize(rows=start_row + len(table_values), cols=len(table_values[0]) if table_values else 1)
-    ws.update(f"A{start_row}", table_values, value_input_option="RAW")
+    end_row = start_row + len(table_values) - 1
+
+    # Write the table strictly from A:J
+    ws.update(f"A{start_row}:J{end_row}", table_values, value_input_option="RAW")
 
     print(f"✅ Google Sheet updated with {len(df)} rows.")

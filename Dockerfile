@@ -8,7 +8,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-ENV OUT_DIR=/output
-RUN mkdir -p /output
-
 CMD ["python", "scraper_playwright.py"]

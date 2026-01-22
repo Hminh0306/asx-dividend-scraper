@@ -1,7 +1,21 @@
+# Git cached files
+.git/
+
+# Cached file
 __pycache__/
 *.pyc
+
+# Virtual environment
 .venv/
 venv/
+
+# Env 
 .env
-.git/
-output/
+
+# Secret keys
+## Google Sheet keys
+service_account.json
+## Firebase keys
+serviceAccountKey.json
+
+*.json

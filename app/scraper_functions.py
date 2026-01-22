@@ -55,8 +55,8 @@ async def scraper():
         Code
         Company
         Ex_date
-        Franking
         Pay_date
+        Franking
         Yield
         Price
         4W Volume 

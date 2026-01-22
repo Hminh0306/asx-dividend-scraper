@@ -6,3 +6,4 @@ pytest
 firebase-admin 
 gspread
 google-cloud-bigquery
+pyarrow

@@ -126,6 +126,6 @@ Windows
     python scraper_playwright.py
 ```
 
-*The output will be displayed on Google Sheet for specified Sheet. Current implementation is being displayed on ==https://docs.google.com/spreadsheets/d/15CQUqo2_K08qqACSgrV9muNYlU2S7yNa9QXJ-YvnVS4/edit?gid=1631965488#gid=1631965488== (with restricted access). Please email ==asxdividendproject@gmail.com== for preview access*
+*The output will be displayed on Google Sheet for specified Sheet. Current implementation is being displayed on **https://docs.google.com/spreadsheets/d/15CQUqo2_K08qqACSgrV9muNYlU2S7yNa9QXJ-YvnVS4/edit?gid=1631965488#gid=1631965488_ **(with restricted access). Please email ==asxdividendproject@gmail.com for preview access.*
 
 ---

@@ -23,7 +23,7 @@ async def main():
         # 2. Upload data crawled to Firebase
         upload_to_firebase(data_results, today_str)
 
-        # 3. Upload data crawled to BigQuery
+        # 3. Upload data crawled to BigQuery (merge instead of appending)
         upload_to_bigquery(data_results, today_str)
         
         # 4. Fetch data from Firebase and push to Google Sheet

@@ -42,7 +42,7 @@ def get_worksheet():
         ws = sh.add_worksheet(title=tab_name, rows=1000, cols=30)
     return ws
 
-def update_sheet(data_from_firebase):
+def update_sheet(data_from_firebase: list[dict]):
     if not data_from_firebase:
         print("⚠️ No data provided to update_sheet().")
         return

@@ -11,8 +11,6 @@ from pathlib import Path
 from bs4 import BeautifulSoup
 from firebase_admin import firestore
 
-from app.firebase_functions import db
-
 # Set encoding for Windows Terminal
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
@@ -145,7 +143,7 @@ async def scraper():
                     "Price": price_num,
                     "4W Volume": vol_num,
                     "Total Value": total_value,
-                    "last_updated": firestore.SERVER_TIMESTAMP if db else datetime.now().isoformat(),
+                    "last_updated": datetime.now().isoformat(),
                 }
 
                 results.append(data_item)

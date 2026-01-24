@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from typing import Any, Optional, List, Dict
 
 import pandas as pd
@@ -226,6 +226,115 @@ def upload_to_bigquery(data_crawled: List[Dict[str, Any]], today_str: str) -> No
     load_job.result()  # wait
 
     print(f"✅ BigQuery load job completed at {datetime.now()}.")
+
+
+
+def fetch_latest_data_from_bq(dt: datetime) -> List[Dict[str, Any]]:
+    """
+    Fetch latest unique rows from BigQuery asx_dividends_daily table on a specified day 
+
+    Args:
+        datetime:
+        - The day to asked for latest information
+    
+    Returns:
+        list[dict] where keys match the sheet column headers:
+        - Crawl Date
+        - Code
+        - Company
+        - Ex Date
+        - Pay Date
+        - Amount
+        - Franking
+        - Yield
+        - Price
+        - 4W Volume
+        - Total Volume
+    """
+    if not PROJECT_ID or not DATASET_ID or not MAIN_TABLE:
+        raise RuntimeError("Missing BigQuery env vars: BQ_PROJECT_ID / BQ_DATASET_ID / BQ_MAIN_TABLE_ID")
+
+    # Get the date of input
+    target_day : date = dt.date()
+
+    # Filtering the company with ex_date >= today + 2
+    ex_date_cutoff: date = target_day + timedelta(days=2)
+
+    # Parameterized predicate + paramters
+    crawl_date_predicate = "crawl_date = @crawl_date" # [BigQuery] Configuration setup crawl_date as partition key
+    qparams = [
+        bigquery.ScalarQueryParameter("crawl_date", "DATE", target_day),
+        bigquery.ScalarQueryParameter("ex_date_cutoff", "DATE", ex_date_cutoff)
+    ]
+
+    # SQL command - can port this later
+    sql_command = f"""
+        WITH ranked AS (
+        SELECT
+            crawl_date,
+            code,
+            company,
+            ex_date,
+            pay_date,
+            amount,
+            franking,
+            yield,
+            price,
+            `4w_volume`,
+            total_value,
+            last_update,
+            ROW_NUMBER() OVER (
+            PARTITION BY crawl_date, code
+            ORDER BY last_update DESC
+            ) AS rn
+        FROM `{main_table_id}`
+        WHERE {crawl_date_predicate}
+            AND ex_date >= @ex_date_cutoff
+        )
+        SELECT
+        crawl_date,
+        code,
+        company,
+        ex_date,
+        pay_date,
+        amount,
+        franking,
+        yield,
+        price,
+        `4w_volume`,
+        total_value,
+        last_update
+        FROM ranked
+        WHERE rn = 1
+        ORDER BY ex_date
+    """
+
+    job_config = bigquery.QueryJobConfig(query_parameters=qparams)
+    rows = list(client.query(sql_command, job_config=job_config).result())
+
+    output = []
+
+    for row in rows:
+        output.append(
+            {
+                "Crawl Date": row["crawl_date"].isoformat() if row.get("crawl_date") else "",
+                "Code": row.get("code") or "",
+                "Company": row.get("company") or "",
+                "Ex Date": row["ex_date"].isoformat() if row.get("ex_date") else "",
+                "Pay Date": row["pay_date"].isoformat() if row.get("pay_date") else "",
+                "Amount": row.get("amount"),
+                "Franking": row.get("franking"),
+                "Yield": row.get("yield"),
+                "Price": row.get("price"),
+                "4W Volume": row.get("4w_volume"),
+                "Total Value": row.get("total_value"),
+            }
+        )
+
+    print(f"📥 BigQuery fetched {len(output)} rows for crawl_day={target_day} (ex_date >= {ex_date_cutoff})")
+    return output
+
+
 
 def merge_to_bigquery(data_crawled: list[dict]):
     """

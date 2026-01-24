@@ -225,7 +225,7 @@ def upload_to_bigquery(data_crawled: List[Dict[str, Any]], today_str: str) -> No
     load_job = client.load_table_from_dataframe(df, main_table_id, job_config=job_config)
     load_job.result()  # wait
 
-    print(f"✅ BigQuery load job completed at {datetime.now()}.")
+    print(f"[BIGQUERY] ✅ BigQuery load job completed at {datetime.now()}.")
 
 
 
@@ -331,7 +331,7 @@ def fetch_latest_data_from_bq(dt: datetime) -> List[Dict[str, Any]]:
             }
         )
 
-    print(f"📥 BigQuery fetched {len(output)} rows for crawl_day={target_day} (ex_date >= {ex_date_cutoff})")
+    print(f"[BIGQUERY] 📥 BigQuery fetched {len(output)} rows for crawl_day={target_day} (ex_date >= {ex_date_cutoff})")
     return output
 
 

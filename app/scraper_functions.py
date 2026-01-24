@@ -153,5 +153,5 @@ async def scraper():
             except Exception as e:
                 print(f"⚠️ Error at row {i} ({code}): {e}")
 
-    print(f"Completed scraping at {datetime.now()}")
+    print(f"[CRAWL4AI] Completed scraping at {datetime.now()}")
     return results # list[dict]

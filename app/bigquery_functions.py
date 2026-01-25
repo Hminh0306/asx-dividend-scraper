@@ -202,7 +202,7 @@ def upload_to_bigquery(data_crawled: List[Dict[str, Any]], today_str: str) -> No
     if "last_update" in df.columns:
         df["last_update"] = pd.to_datetime(df["last_update"], utc=True, errors="coerce")
 
-    print(f"📦 BigQuery load: {len(df)} rows → {main_table_id} (dropped {dropped})")
+    print(f"[BIGQUERY] 📦 BigQuery load: {len(df)} rows → {main_table_id} (dropped {dropped})")
 
     job_config = bigquery.LoadJobConfig(
         schema=[

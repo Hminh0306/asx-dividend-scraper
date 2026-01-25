@@ -6,4 +6,5 @@ pytest
 firebase-admin 
 gspread
 google-cloud-bigquery
+pandas-gbq
 pyarrow

@@ -1,0 +1,32 @@
+name: Scraper Trigger 
+
+on:
+    repository_dispatch:
+        types: [remote_trigger] 
+
+jobs:
+    run_scraper:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+            
+            - name: Set up Python
+              uses: actions/setup-python@v4
+              with:
+                python-version: '3.12'
+            
+            - name: Install dependencies
+              run: |
+                pip install -r requirements.txt
+            
+            - name: Create Service Account File
+              run: echo '${{ secrets.GOOGLE_CREDS }}' > service_account.json
+
+            - name: Run application code
+              env:
+                BQ_PROJECT_ID: ${{ secrets.BQ_PROJECT_ID }}
+                BQ_DATASET_ID:  ${{ secrets.BQ_DATASET_ID }}
+                BQ_MAIN_TABLE_ID:  ${{ secrets.BQ_MAIN_TABLE_ID }}
+                GOOGLE_CREDS: ./service_account.json
+              run: python -m scraper_playwright.py

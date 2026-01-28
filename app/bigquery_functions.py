@@ -269,8 +269,8 @@ def fetch_latest_data_from_bq(dt: datetime) -> List[Dict[str, Any]]:
     # Get the date of input
     target_day : date = dt.date()
 
-    # Filtering the company with ex_date >= today + 2
-    ex_date_cutoff: date = target_day + timedelta(days=2)
+    # Filtering the company with ex_date is tomorrow
+    ex_date_cutoff: date = target_day + timedelta(days=1)
 
     # Parameterized predicate + paramters
     crawl_date_predicate = "crawl_date = @crawl_date" # [BigQuery] Configuration setup crawl_date as partition key
@@ -296,8 +296,8 @@ def fetch_latest_data_from_bq(dt: datetime) -> List[Dict[str, Any]]:
             total_value,
             last_update,
             ROW_NUMBER() OVER (
-            PARTITION BY crawl_date, code
-            ORDER BY last_update DESC
+                PARTITION BY crawl_date, code, ex_date
+                ORDER BY last_update DESC
             ) AS rn
         FROM `{main_table_id}`
         WHERE {crawl_date_predicate}
@@ -390,7 +390,7 @@ def fetch_latest_data_from_bq(dt: datetime) -> List[Dict[str, Any]]:
 #     merge_sql = f"""
 #     MERGE `{main_table_id}` T
 #     USING `{staging_table_id}` S
-#     ON T.crawl_date = S.crawl_date AND T.code = S.code
+#     ON T.crawl_date = S.crawl_date AND T.code = S.code AND T.ex_date = S.ex_date
 #     WHEN MATCHED THEN UPDATE SET
 #       company = S.company,
 #       ex_date = S.ex_date,

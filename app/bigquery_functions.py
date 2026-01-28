@@ -7,6 +7,7 @@ from typing import Any, Optional, List, Dict
 import pandas as pd
 from dotenv import load_dotenv
 from google.cloud import bigquery
+from google.oauth2 import service_account
 
 load_dotenv()
 
@@ -14,8 +15,19 @@ PROJECT_ID = os.getenv("BQ_PROJECT_ID")
 DATASET_ID = os.getenv("BQ_DATASET_ID")
 MAIN_TABLE = os.getenv("BQ_MAIN_TABLE_ID")
 STAGING_TABLE = os.getenv("BQ_STAGING_TABLE_ID")
+GOOGLE_AUTH_KEY_PATH = os.getenv("GOOGLE_CREDS")
 
-client = bigquery.Client(project=PROJECT_ID)
+# File-based auth key
+if GOOGLE_AUTH_KEY_PATH and os.path.exists(GOOGLE_AUTH_KEY_PATH):
+    credentials = service_account.Credentials.from_service_account_file(GOOGLE_AUTH_KEY_PATH)
+    client = bigquery.Client(credentials=credentials, project=PROJECT_ID)
+    print(f"[SUCCESS][BIGQUERY] Initialized BigQuery Client using service account file: {GOOGLE_AUTH_KEY_PATH}")
+# System-based auth key (gcloud)
+else:
+    client = bigquery.Client(project=PROJECT_ID)
+    print(f"[SUCCESS][BIGQUERY] Initialized BigQuery Client using service account file: {GOOGLE_AUTH_KEY_PATH}")
+
+
 main_table_id = f"{PROJECT_ID}.{DATASET_ID}.{MAIN_TABLE}"
 staging_table_id = f"{PROJECT_ID}.{DATASET_ID}.{STAGING_TABLE}"
 

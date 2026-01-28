@@ -29,7 +29,7 @@ else:
 
 
 main_table_id = f"{PROJECT_ID}.{DATASET_ID}.{MAIN_TABLE}"
-staging_table_id = f"{PROJECT_ID}.{DATASET_ID}.{STAGING_TABLE}"
+# staging_table_id = f"{PROJECT_ID}.{DATASET_ID}.{STAGING_TABLE}"
 
 
 # ---------- Helpers ----------

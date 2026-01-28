@@ -14,7 +14,7 @@ load_dotenv()
 PROJECT_ID = os.getenv("BQ_PROJECT_ID")
 DATASET_ID = os.getenv("BQ_DATASET_ID")
 MAIN_TABLE = os.getenv("BQ_MAIN_TABLE_ID")
-STAGING_TABLE = os.getenv("BQ_STAGING_TABLE_ID")
+# STAGING_TABLE = os.getenv("BQ_STAGING_TABLE_ID")
 GOOGLE_AUTH_KEY_PATH = os.getenv("GOOGLE_CREDS")
 
 # File-based auth key
@@ -348,68 +348,68 @@ def fetch_latest_data_from_bq(dt: datetime) -> List[Dict[str, Any]]:
 
 
 
-def merge_to_bigquery(data_crawled: list[dict]):
-    """
-    1) Load current run into STAGING (truncate staging)
-    2) MERGE STAGING into MAIN on (crawl_date, code)
-       - MATCHED => UPDATE
-       - NOT MATCHED => INSERT
-    """
-    if not data_crawled:
-        print("⚠️ No data to merge_to_bigquery()")
-        return
+# def merge_to_bigquery(data_crawled: list[dict]):
+#     """
+#     1) Load current run into STAGING (truncate staging)
+#     2) MERGE STAGING into MAIN on (crawl_date, code)
+#        - MATCHED => UPDATE
+#        - NOT MATCHED => INSERT
+#     """
+#     if not data_crawled:
+#         print("⚠️ No data to merge_to_bigquery()")
+#         return
 
-    rows = []
-    dropped = 0
-    for item in data_crawled:
-        r = _normalize_row(item)
-        if not r["crawl_date"] or not r["code"]:
-            dropped += 1
-            continue
-        rows.append(r)
+#     rows = []
+#     dropped = 0
+#     for item in data_crawled:
+#         r = _normalize_row(item)
+#         if not r["crawl_date"] or not r["code"]:
+#             dropped += 1
+#             continue
+#         rows.append(r)
 
-    if not rows:
-        print(f"⚠️ After normalization, 0 rows left (dropped {dropped}).")
-        return
+#     if not rows:
+#         print(f"⚠️ After normalization, 0 rows left (dropped {dropped}).")
+#         return
 
-    df = pd.DataFrame(rows)
+#     df = pd.DataFrame(rows)
 
-    # Ensure pandas dtypes align for BigQuery load
-    df["crawl_date"] = pd.to_datetime(df["crawl_date"]).dt.date
-    df["ex_date"] = pd.to_datetime(df["ex_date"]).dt.date
-    df["pay_date"] = pd.to_datetime(df["pay_date"]).dt.date
-    df["last_update"] = pd.to_datetime(df["last_update"], utc=True, errors="coerce")
+#     # Ensure pandas dtypes align for BigQuery load
+#     df["crawl_date"] = pd.to_datetime(df["crawl_date"]).dt.date
+#     df["ex_date"] = pd.to_datetime(df["ex_date"]).dt.date
+#     df["pay_date"] = pd.to_datetime(df["pay_date"]).dt.date
+#     df["last_update"] = pd.to_datetime(df["last_update"], utc=True, errors="coerce")
 
-    print(f"📦 Loading {len(df)} rows into staging: {staging_table_id} (dropped {dropped})")
+#     print(f"📦 Loading {len(df)} rows into staging: {staging_table_id} (dropped {dropped})")
 
-    load_cfg = bigquery.LoadJobConfig(
-        write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,  # staging is "this run only"
-    )
-    client.load_table_from_dataframe(df, staging_table_id, job_config=load_cfg).result()
+#     load_cfg = bigquery.LoadJobConfig(
+#         write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,  # staging is "this run only"
+#     )
+#     client.load_table_from_dataframe(df, staging_table_id, job_config=load_cfg).result()
 
-    merge_sql = f"""
-    MERGE `{main_table_id}` T
-    USING `{staging_table_id}` S
-    ON T.crawl_date = S.crawl_date AND T.code = S.code
-    WHEN MATCHED THEN UPDATE SET
-      company = S.company,
-      ex_date = S.ex_date,
-      pay_date = S.pay_date,
-      amount = S.amount,
-      franking = S.franking,
-      yield = S.yield,
-      price = S.price,
-      `4w_volume` = S.`4w_volume`,
-      total_value = S.total_value,
-      last_update = S.last_update
-    WHEN NOT MATCHED THEN
-      INSERT (crawl_date, code, company, ex_date, pay_date, amount, franking, yield, price, `4w_volume`, total_value, last_update)
-      VALUES (S.crawl_date, S.code, S.company, S.ex_date, S.pay_date, S.amount, S.franking, S.yield, S.price, S.`4w_volume`, S.total_value, S.last_update)
-    """
+#     merge_sql = f"""
+#     MERGE `{main_table_id}` T
+#     USING `{staging_table_id}` S
+#     ON T.crawl_date = S.crawl_date AND T.code = S.code
+#     WHEN MATCHED THEN UPDATE SET
+#       company = S.company,
+#       ex_date = S.ex_date,
+#       pay_date = S.pay_date,
+#       amount = S.amount,
+#       franking = S.franking,
+#       yield = S.yield,
+#       price = S.price,
+#       `4w_volume` = S.`4w_volume`,
+#       total_value = S.total_value,
+#       last_update = S.last_update
+#     WHEN NOT MATCHED THEN
+#       INSERT (crawl_date, code, company, ex_date, pay_date, amount, franking, yield, price, `4w_volume`, total_value, last_update)
+#       VALUES (S.crawl_date, S.code, S.company, S.ex_date, S.pay_date, S.amount, S.franking, S.yield, S.price, S.`4w_volume`, S.total_value, S.last_update)
+#     """
 
-    print("🔁 Running MERGE into main table…")
-    client.query(merge_sql).result()
-    print(f"✅ MERGE complete: staging → {main_table_id}")
+#     print("🔁 Running MERGE into main table…")
+#     client.query(merge_sql).result()
+#     print(f"✅ MERGE complete: staging → {main_table_id}")
 
 # ---------- Connection ----------
 def test_bq_connection():

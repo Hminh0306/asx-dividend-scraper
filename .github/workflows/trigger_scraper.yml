@@ -1,0 +1,38 @@
+name: Scraper Trigger 
+
+on:
+    repository_dispatch:
+        types: [remote_trigger] 
+    workflow_dispatch: 
+jobs:
+    run_scraper:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+            
+            - name: Set up Python
+              uses: actions/setup-python@v4
+              with:
+                python-version: '3.12'
+            
+            - name: Install dependencies
+              run: |
+                pip install -r requirements.txt
+            
+            - name: Install Playwright Browsers
+              run: python -m playwright install --with-deps chromium
+                
+            - name: Create Service Account File
+              run: echo '${{ secrets.GOOGLE_CREDS }}' > service_account.json
+
+            - name: Run application code
+              env:
+                SHEET_ID: ${{ vars.SHEET_ID }}
+                SHEET_TAB: ${{ vars.SHEET_TAB }}
+                BQ_PROJECT_ID: ${{ vars.BQ_PROJECT_ID }}
+                BQ_DATASET_ID:  ${{ vars.BQ_DATASET_ID }}
+                BQ_MAIN_TABLE_ID:  ${{ vars.BQ_MAIN_TABLE_ID }}
+                
+                GOOGLE_CREDS: ./service_account.json
+              run: python scraper_playwright.py

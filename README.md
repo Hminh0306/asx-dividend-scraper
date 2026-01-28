@@ -16,10 +16,76 @@ The pipeline can be run **locally** (via Python) or **containerised** (via Docke
 
 ## Prerequisites
 
-### General
-- Python >= **3.9+**
+### General (up-to 16/1/2026)
+- Python >= **3.12+**
 - Git
 - Internet connection
+- Gcloud-cli with verified Gcloud credentials
+
+## Gcloud CLI Installation & Setup
+*This project integrates with Google Cloud services (BigQuery, Cloud Run). You must install and authenticate the Google Cloud CLI (gcloud) before running the pipeline locally or deploying it.*
+### 1. Install gcloud CLI (macOS – Homebrew)
+```bash
+    brew install --cask google-cloud-sdk
+```
+After installation, restart your terminal or add gcloud to your PATH:
+```bash
+    export PATH="/opt/homebrew/share/google-cloud-sdk/bin:$PATH"
+```
+
+Make it permanent
+```bash
+    echo 'export PATH="/opt/homebrew/share/google-cloud-sdk/bin:$PATH"' >> ~/.zshrc
+    source ~/.zshrc
+```
+
+### 2. Verify gcloud installation
+```bash
+    gcloud --version
+```
+Expected output (Example)
+```
+    Google Cloud SDK    4xx.x.x
+    bq                  2.xx.x
+    gsutil              5.xx
+```
+
+### 3. Set Python for Gcloud (required)
+- gcloud requires a supported Python runtime (3.10+).
+- If you have Python 3.12 installed via Homebrew:
+```bash
+    export CLOUDSDK_PYTHON="/opt/homebrew/opt/python@3.12/libexec/bin/python3"
+```
+- Make it permanent:
+```bash
+    echo 'export CLOUDSDK_PYTHON="/opt/homebrew/opt/python@3.12/libexec/bin/python3"' >> ~/.zshrc
+source ~/.zshrc
+```
+- Then initialise gcloud's internal environement:
+```bash
+    gcloud config virtualenv create --python-to-use "$CLOUDSDK_PYTHON"
+```
+### 4. Initialise & Authenticate Gcloud
+```bash
+    gcloud init
+```
+- Authenticate application credentials (required for BigQuery access):
+```bash
+    gcloud auth application-default login
+```
+- This will create a application_default_credentials.json file which is automatically used by bigQuery.Client()
+
+### 5. Verify BigQuery Access
+- Check for datasetId
+```bash
+    bq ls
+```
+- Check for BigQuery connection
+```bash
+    python -c "from app.bigquery_functions import test_bq_connection; test_bq_connection()"
+```
+
+---
 
 ### Docker (optional but recommended)
 - Docker Desktop installed and running
@@ -60,45 +126,6 @@ Windows
     python scraper_playwright.py
 ```
 
-*The generated CSV file will be saved to the default output directory defined in the script.*
+*The output will be displayed on Google Sheet for specified Sheet. Current implementation is being displayed on* __https://docs.google.com/spreadsheets/d/15CQUqo2_K08qqACSgrV9muNYlU2S7yNa9QXJ-YvnVS4/edit?gid=1631965488#gid=1631965488_ __ *(with restricted access). Please email asxdividendproject@gmail.com for preview access.*
 
 ---
-
-# Docker Installation
-Running via Docker ensures:
-
-- No local dependency conflicts
-
-- Identical behaviour across machines
-
-- Easy repeatability
-
-## 1. Pull image down 
-```
-    docker pull nddminhh/asx-dividend-scraper:latest
-```
-
-## 2. Execute docker
-### Notes
-- .csv file will be saved inside your machine Downloads directory by default
-- Please take a look at your Downloads directory after the code completion for your long desired file
-### MacOS/ Linux (bash/ zsh)
-```
-    docker run --rm \
-        -v "$HOME/Downloads:/root/Downloads" \
-        nddminhh/asx-dividend-scraper:latest
-```
-
-### Windows PowerShell
-```
-    docker run --rm `
-        -v "$env:USERPROFILE\Downloads:/root/Downloads" `
-        nddminhh/asx-dividend-scraper:latest
-```
-
-### Windows CMD
-```
-    docker run --rm ^
-        -v "%USERPROFILE%\Downloads:/root/Downloads" ^
-        nddminhh/asx-dividend-scraper:latest
-```

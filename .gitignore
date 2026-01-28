@@ -1,5 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+.app/__pycache__
+
+# Files
 browser_session/
 *.csv
+
+# Virtual environment
 venv/
+
+# OS
 .DS_Store
-./output
+
+# Secret keys/ credentials
+## Google Sheet API service account key
+service_account.json
+
+## Firebase service account key
+serviceAccountKey.json
+
+*.secrete.json
+.env
+*.env
+credentials.json
+
+# History record
+./history_record
+
+# Database 
+./database/*

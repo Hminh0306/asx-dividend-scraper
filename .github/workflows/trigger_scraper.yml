@@ -29,4 +29,4 @@ jobs:
                 BQ_DATASET_ID:  ${{ secrets.BQ_DATASET_ID }}
                 BQ_MAIN_TABLE_ID:  ${{ secrets.BQ_MAIN_TABLE_ID }}
                 GOOGLE_CREDS: ./service_account.json
-              run: python -m scraper_playwright.py
+              run: python scraper_playwright.py

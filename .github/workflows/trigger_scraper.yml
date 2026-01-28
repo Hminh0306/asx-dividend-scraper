@@ -20,6 +20,9 @@ jobs:
               run: |
                 pip install -r requirements.txt
             
+            - name: Install Playwright Browsers
+              run: python -m playwright install --with-deps chromium
+                
             - name: Create Service Account File
               run: echo '${{ secrets.GOOGLE_CREDS }}' > service_account.json
 

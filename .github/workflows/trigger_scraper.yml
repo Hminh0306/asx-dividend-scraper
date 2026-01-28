@@ -3,7 +3,7 @@ name: Scraper Trigger
 on:
     repository_dispatch:
         types: [remote_trigger] 
-
+    workflow_dispatch: 
 jobs:
     run_scraper:
         runs-on: ubuntu-latest

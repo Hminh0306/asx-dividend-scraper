@@ -28,8 +28,11 @@ jobs:
 
             - name: Run application code
               env:
-                BQ_PROJECT_ID: ${{ secrets.BQ_PROJECT_ID }}
-                BQ_DATASET_ID:  ${{ secrets.BQ_DATASET_ID }}
-                BQ_MAIN_TABLE_ID:  ${{ secrets.BQ_MAIN_TABLE_ID }}
+                SHEET_ID: ${{ vars.SHEET_ID }}
+                SHEET_TAB: ${{ vars.SHEET_TAB }}
+                BQ_PROJECT_ID: ${{ vars.BQ_PROJECT_ID }}
+                BQ_DATASET_ID:  ${{ vars.BQ_DATASET_ID }}
+                BQ_MAIN_TABLE_ID:  ${{ vars.BQ_MAIN_TABLE_ID }}
+                
                 GOOGLE_CREDS: ./service_account.json
               run: python scraper_playwright.py

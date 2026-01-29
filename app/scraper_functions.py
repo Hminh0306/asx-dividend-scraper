@@ -5,6 +5,7 @@ import io
 import os
 import random
 import datetime
+from typing import Any
 from datetime import datetime
 from crawl4ai import AsyncWebCrawler, CrawlerRunConfig, CacheMode
 from pathlib import Path
@@ -46,7 +47,7 @@ def clean_percent_to_decimal(text):
     return val / 100 if val is not None else None
 
 # --- MAIN SCRAPE FUNCTION --- 
-async def scraper():
+async def scraper() -> list[dict[str, Any]]:
     """
     Scrape information from marketindex.com.au/upcoming-dividends and individual codes
     Return list of dictionary containing information of each code in the columns:

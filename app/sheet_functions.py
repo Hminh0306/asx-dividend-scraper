@@ -50,7 +50,7 @@ def update_sheet(data_from_bigquery: list[dict]):
     ws = get_worksheet()
 
     # Extract crawl_date before dropping columns
-    crawl_date = data_from_bigquery[0].get("crawl_date", "N/A")
+    crawl_date = data_from_bigquery[0].get("Crawl Date", "N/A")
     df = pd.DataFrame(data_from_bigquery)
 
     # Drop unnecessary columns

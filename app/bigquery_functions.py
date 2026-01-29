@@ -329,17 +329,17 @@ def fetch_latest_data_from_bq(dt: datetime) -> List[Dict[str, Any]]:
     for row in rows:
         output.append(
             {
-                "Crawl Date": row["crawl_date"].isoformat() if row.get("crawl_date") else "",
-                "Code": row.get("code") or "",
-                "Company": row.get("company") or "",
-                "Ex Date": row["ex_date"].isoformat() if row.get("ex_date") else "",
-                "Pay Date": row["pay_date"].isoformat() if row.get("pay_date") else "",
-                "Amount": row.get("amount"),
-                "Franking": row.get("franking"),
-                "Yield": row.get("yield"),
-                "Price": row.get("price"),
-                "4W Volume": row.get("4w_volume"),
-                "Total Value": row.get("total_value"),
+                "crawl_date": row["crawl_date"].isoformat() if row.get("crawl_date") else "",
+                "code": row.get("code") or "",
+                "company": row.get("company") or "",
+                "ex_date": row["ex_date"].isoformat() if row.get("ex_date") else "",
+                "pay_date": row["pay_date"].isoformat() if row.get("pay_date") else "",
+                "amount": row.get("amount"),
+                "franking": row.get("franking"),
+                "yield": row.get("yield"),
+                "price": row.get("price"),
+                "4w_volume": row.get("4w_volume"),
+                "total_value": row.get("total_value"),
             }
         )
 

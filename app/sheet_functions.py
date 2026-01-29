@@ -42,31 +42,41 @@ def get_worksheet():
         ws = sh.add_worksheet(title=tab_name, rows=1000, cols=30)
     return ws
 
-def update_sheet(data_from_firebase: list[dict]):
-    if not data_from_firebase:
+def update_sheet(data_from_bigquery: list[dict]):
+    if not data_from_bigquery:
         print("⚠️ No data provided to update_sheet().")
         return
 
     ws = get_worksheet()
 
-    crawl_date = data_from_firebase[0].get("Crawl Date", "")
+    # Extract crawl_date before dropping columns
+    crawl_date = data_from_bigquery[0].get("crawl_date", "N/A")
+    df = pd.DataFrame(data_from_bigquery)
 
-    df = pd.DataFrame(data_from_firebase)
+    # Drop unnecessary columns
+    drop_cols = ["crawl_date", "last_update"]
+    df = df.drop(columns=[c for c in drop_cols if c in df.columns])
 
-    # Remove Crawl Date from the table
-    if "Crawl Date" in df.columns:
-        df = df.drop(columns=["Crawl Date"])
+    # Sort by Ex Date (Stable sort to maintain order if dates are identical)
+    if "ex_date" in df.columns:
+        df["ex_date_dt"] = pd.to_datetime(df["ex_date"], errors="coerce")
+        df = df.sort_values("ex_date_dt", ascending=True, kind="stable")
+        df = df.drop(columns=["ex_date_dt"])
+    
+    # Matching columns between BigQuery and Google Sheet
+    rename_map = {
+            "code": "Code",
+            "company": "Company",
+            "ex_date": "Ex Date",
+            "pay_date": "Pay Date",
+            "amount": "Amount",
+            "franking": "Franking",
+            "yield": "Yield",
+            "price": "Price",
+            "4w_volume": "4W Volume",
+            "total_value": "Total Value"
+        }
 
-    # Remove last_updated from the table
-    if "last_updated" in df.columns:
-        df = df.drop(columns=["last_updated"])
-
-    # Filter: Ex Date >= today + 2 
-    if "Ex Date" in df.columns:
-        today_plus_2 = (datetime.now() + timedelta(days=2)).date()
-        df["Ex Date Parsed"] = pd.to_datetime(df["Ex Date"], errors="coerce").dt.date
-        df = df[df["Ex Date Parsed"] >= today_plus_2]
-        df = df.drop(columns=["Ex Date Parsed"])
 
     preferred_order = [
         "Code",
@@ -81,24 +91,21 @@ def update_sheet(data_from_firebase: list[dict]):
         "Total Value"
     ]
 
-    ordered_cols = (
-        [c for c in preferred_order if c in df.columns]
-        + [c for c in df.columns if c not in preferred_order]
-    )
+    # Rename and reorder
+    df = df.rename(columns=rename_map)
+    ordered_cols = [c for c in preferred_order if c in df.columns]
     df = df[ordered_cols]
 
-    if "Code" in df.columns:
-        df = df.sort_values("Ex Date", kind="stable")
-
-    # Keep numbers as numbers; replace NaN/None with ""
+    # Cleanup NaN/ None
     df = df.where(pd.notnull(df), "")
 
+    # Prepare and write data
     table_values = [df.columns.tolist()] + df.values.tolist()
 
     # Only change from column A to column J
     ws.batch_clear(["A:J"])
 
-    # Crawl Date box
+    # Header info
     ws.update("A1", [[f"Crawl Date: {crawl_date}"]], value_input_option="RAW")
     ws.format("A1", {"textFormat": {"bold": True}})
 

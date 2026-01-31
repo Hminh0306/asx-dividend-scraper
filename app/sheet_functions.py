@@ -116,5 +116,5 @@ def update_sheet(data_from_bigquery: list[dict]):
 
     # Write the table strictly from A:J
     ws.update(f"A{start_row}:J{end_row}", table_values, value_input_option="RAW")
-
+    
     print(f"[GOOGLE SHEET] ✅ Google Sheet updated with {len(df)} rows.")

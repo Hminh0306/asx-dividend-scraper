@@ -9,7 +9,6 @@ from datetime import datetime
 from crawl4ai import AsyncWebCrawler, CrawlerRunConfig, CacheMode
 from pathlib import Path
 from bs4 import BeautifulSoup
-from firebase_admin import firestore
 
 # Set encoding for Windows Terminal
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
@@ -155,6 +154,6 @@ async def scraper():
     # Adding last_update at the end for time consistency
     for item in results:
         item["last_updated"] = datetime.now().isoformat()
-        
+
     print(f"[CRAWL4AI] Completed scraping at {datetime.now()}")
     return results # list[dict]

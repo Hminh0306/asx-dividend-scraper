@@ -12,7 +12,7 @@ jobs:
               uses: actions/checkout@v4
             
             - name: Set up Python
-              uses: actions/setup-python@v4
+              uses: actions/setup-python@v5
               with:
                 python-version: '3.12'
             
@@ -22,17 +22,14 @@ jobs:
             
             - name: Install Playwright Browsers
               run: python -m playwright install --with-deps chromium
-                
-            - name: Create Service Account File
-              run: echo '${{ secrets.GOOGLE_CREDS }}' > service_account.json
 
             - name: Run application code
               env:
-                SHEET_ID: ${{ vars.SHEET_ID }}
-                SHEET_TAB: ${{ vars.SHEET_TAB }}
-                BQ_PROJECT_ID: ${{ vars.BQ_PROJECT_ID }}
-                BQ_DATASET_ID:  ${{ vars.BQ_DATASET_ID }}
-                BQ_MAIN_TABLE_ID:  ${{ vars.BQ_MAIN_TABLE_ID }}
+                # AWS Redshift Connection Details
+                REDSHIFT_HOST: ${{ vars.REDSHIFT_HOST }}
+                REDSHIFT_DATABASE: ${{ vars.REDSHIFT_DATABASE }}
+                REDSHIFT_USER: ${{ vars.REDSHIFT_USER }}
+                REDSHIFT_PASSWORD: ${{ secrets.REDSHIFT_PASSWORD }}
+                REDSHIFT_PORT: ${{ vars.REDSHIFT_PORT }}
                 
-                GOOGLE_CREDS: ./service_account.json
               run: python scraper_playwright.py

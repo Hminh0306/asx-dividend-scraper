@@ -19,6 +19,7 @@ def get_connection():
             user=os.getenv('REDSHIFT_USER'),
             password=os.getenv('REDSHIFT_PASSWORD'),
             port=int(port_env) if os.getenv('REDSHIFT_PORT') else 5439,
+            ssl=True
         )
         conn.autocommit = True
         print("✅ Successfully connected to Redshift Database")

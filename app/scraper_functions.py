@@ -143,7 +143,6 @@ async def scraper():
                     "Price": price_num,
                     "4W Volume": vol_num,
                     "Total Value": total_value,
-                    "last_updated": datetime.now().isoformat(),
                 }
 
                 results.append(data_item)
@@ -152,6 +151,10 @@ async def scraper():
 
             except Exception as e:
                 print(f"⚠️ Error at row {i} ({code}): {e}")
-
+    
+    # Adding last_update at the end for time consistency
+    for item in results:
+        item["last_updated"] = datetime.now().isoformat()
+        
     print(f"[CRAWL4AI] Completed scraping at {datetime.now()}")
     return results # list[dict]

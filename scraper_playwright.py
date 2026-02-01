@@ -4,7 +4,6 @@ from pathlib import Path
 from datetime import datetime
 from app.scraper_functions import scraper
 from app.redshift_functions import update_to_redshift, fetch_latest_data_from_redshift_on
-from app.api.data import update_frontend
 
 today_str = datetime.now().isoformat()
 

@@ -26,10 +26,16 @@ jobs:
             - name: Run application code
               env:
                 # AWS Redshift Connection Details
+                REDSHIFT_PASSWORD: ${{ secrets.REDSHIFT_PASSWORD }}
                 REDSHIFT_HOST: ${{ vars.REDSHIFT_HOST }}
                 REDSHIFT_DATABASE: ${{ vars.REDSHIFT_DATABASE }}
                 REDSHIFT_USER: ${{ vars.REDSHIFT_USER }}
-                REDSHIFT_PASSWORD: ${{ secrets.REDSHIFT_PASSWORD }}
                 REDSHIFT_PORT: ${{ vars.REDSHIFT_PORT }}
+                
+                # S3 Bucket Connection Details
+                AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                AWS_REGION: ${{ vars.AWS_REGION }}
+                S3_BUCKET_NAME: ${{ vars.S3_BUCKET_NAME }}
                 
               run: python scraper_playwright.py

@@ -80,7 +80,3 @@ def update_to_redshift(data_results):
     finally:
         conn.close() # Close after use - prevent resource leakage
         print("🔌 Redshift connection closed.")
-
-def fetch_latest_data_from_redshift_on(time_stamp):
-    
-    return

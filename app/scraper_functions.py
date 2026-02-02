@@ -152,8 +152,9 @@ async def scraper():
                 print(f"⚠️ Error at row {i} ({code}): {e}")
     
     # Adding last_update at the end for time consistency
-    for item in results:
-        item["last_updated"] = datetime.now().isoformat()
+    fixed_time = datetime.now().isoformat()
 
+    for item in results:
+        item["last_updated"] = fixed_time
     print(f"[CRAWL4AI] Completed scraping at {datetime.now()}")
     return results # list[dict]

@@ -37,5 +37,8 @@ jobs:
                 AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
                 AWS_REGION: ${{ vars.AWS_REGION }}
                 S3_BUCKET_NAME: ${{ vars.S3_BUCKET_NAME }}
+
+                VERCEL_WEBSITE_NAME: ${{ vars.VERCEL_WEBSITE_NAME }}
+                VERCEL_REVALIDATE_SECRET: ${{ secrets.VERCEL_REVALIDATE_SECRET }}
                 
               run: python scraper_playwright.py

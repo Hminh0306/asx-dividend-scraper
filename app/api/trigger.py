@@ -28,6 +28,6 @@ def notify_frontend_for_refresh():
         if response.status_code == 200:
             print("✅ Frontend notified successfully")
         else:
-            print(f"⚠️ Frontend failed to notified: {response.text}")
+            print(f"⚠️ Frontend failed to notified ({response.status_code}): {response.text}")
     except Exception as e:
         print(f"❌ Signal error: {e}")

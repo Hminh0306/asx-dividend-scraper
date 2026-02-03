@@ -117,10 +117,10 @@ async def scraper():
 
                         total_value = (vol_num * price_num) if (vol_num and price_num) else None
 
-                        return {**row_data, "Price": price_num, "4W Volume": vol_num, "Total Value": total_value}
+                        return {**row_data, "Price": price_num, "4w Volume": vol_num, "Total Value": total_value}
                     
                     await asyncio.sleep(2 ** attempt) # Exponential backoff
-                return {**row_data, "Price": None, "4W Volume": None, "Total Value": None}
+                return {**row_data, "Price": None, "4w Volume": None, "Total Value": None}
 
         # 1. Parse the main table first
         tasks = []
@@ -151,7 +151,7 @@ async def scraper():
     # 3. Add consistent timestamp
     fixed_time = datetime.now().isoformat()
     for item in results:
-        item["last_updated"] = fixed_time
+        item["Last Updated"] = fixed_time
     
     print(f"[CRAWL4AI] Completed scraping at {datetime.now()}")
     return results

@@ -148,8 +148,7 @@ async def scraper():
         results = await asyncio.gather(*tasks)
 
     # 3. Add consistent timestamp
-    fixed_time = datetime.now().isoformat()
-    fixed_time = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ') # Fixing Timezone Trap
+    fixed_time = datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ') # Fixing Timezone Trap
 
     for item in results:
         item["Last Updated"] = fixed_time

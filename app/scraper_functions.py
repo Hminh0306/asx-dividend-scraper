@@ -2,7 +2,7 @@ import asyncio
 import sys
 import io
 import random
-from datetime import datetime
+from datetime import datetime, timezone
 from crawl4ai import AsyncWebCrawler, CrawlerRunConfig, CacheMode, BrowserConfig
 from bs4 import BeautifulSoup
 
@@ -147,8 +147,8 @@ async def scraper():
         # 2. Run all detail fetches concurrently
         results = await asyncio.gather(*tasks)
 
-    # 3. Add consistent timestamp
-    fixed_time = datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ') # Fixing Timezone Trap
+    # 3. Add UTC timestamp
+    fixed_time = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ') # Fixing Timezone Trap
 
     for item in results:
         item["Last Updated"] = fixed_time

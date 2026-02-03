@@ -14,15 +14,13 @@ def get_redshift_connection():
     """
     Connects to Redshift
     """
-    port_env = os.getenv('REDSHIFT_PORT') or '5439'
-
     try:
         conn = redshift_connector.connect(
             host=os.getenv('REDSHIFT_HOST'),
             database=os.getenv('REDSHIFT_DATABASE'),
             user=os.getenv('REDSHIFT_USER'),
             password=os.getenv('REDSHIFT_PASSWORD'),
-            port=int(port_env) if os.getenv('REDSHIFT_PORT') else 5439,
+            port=int(os.getenv('REDSHIFT_PORT', 5439)),
             ssl=True
         )
         conn.autocommit = True
@@ -30,7 +28,7 @@ def get_redshift_connection():
         return conn
     
     except ValueError:
-        print(f"⚠️ Invalid REDSHIFT_PORT: '{port_env}'. Defaulting to 5439.")
+        print(f"⚠️ Invalid REDSHIFT_PORT: '{os.getenv('REDSHIFT_PORT')}'. Defaulting to 5439.")
         # Optional: retry connection with 5439 here or just fail
         return None
     except Exception as e:
@@ -105,7 +103,7 @@ def get_s3_connection():
 
     except ClientError as e:
         print("❌ S3 Client failed to connect")
-        return 
+        return None
 
 
 def upload_to_s3(data_results):
@@ -135,11 +133,11 @@ def upload_to_s3(data_results):
             Bucket=bucket_name,
             Key=file_name,
             Body=json_data,
-            ContentType='applications/json', # read and not download on browser
+            ContentType='application/json', # read and not download on browser
             CacheControl='no-cache, no-store, must-revalidate' # ensure no cached old version of the data for the browser
         )
 
-        print(f"✅ Successfully streamed newest data - {file_name} to S3 bucket {bucket_name}")
+        print(f"🚀 Successfully streamed newest data - {file_name} to S3 bucket {bucket_name}")
 
     except Exception as e:
         print(f"❌ S3 Upload Error: {e}")

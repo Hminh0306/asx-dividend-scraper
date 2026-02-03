@@ -70,8 +70,8 @@ async def scraper():
         page_timeout=60000,
     )
 
-    # Parallel pages fetching - cap at 10 to avoid rate limiting
-    semaphore = asyncio.Semaphore(10)
+    # Parallel pages fetching - cap at 5 to avoid rate limiting for Github Actions
+    semaphore = asyncio.Semaphore(5)
 
     async with AsyncWebCrawler(config=browser_config) as crawler:
         print(f"🌐 Fetching main list: {UPCOMING_URL}")

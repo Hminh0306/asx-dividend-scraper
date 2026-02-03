@@ -90,7 +90,6 @@ async def scraper():
             async with semaphore:
                 code = row_data['Code']
                 detail_url = ASX_URL.format(code.lower())
-
                 # Pick a session_id for a detail page thread
                 session_id = f"session_{row_idx % 5}" # use 5 persistent browser tabs and cycle through them - reduce RAM usage, speed up crawl, keep cookies/ states if site required
 
@@ -101,6 +100,7 @@ async def scraper():
                         config=CrawlerRunConfig(
                             cache_mode=CacheMode.BYPASS if attempt > 0 else CacheMode.ENABLED,
                             wait_for="span[data-quoteapi*='monthAverageVolume']",
+                            page_timeout=30000,
                             js_code="window.scrollBy(0, 300);",
                         ),
                         session_id = session_id
@@ -114,7 +114,6 @@ async def scraper():
                         
                         vol_num = clean_to_number(vol_elem.get_text(strip=True)) if vol_elem else None
                         price_num = clean_to_number(price_elem.get_text(strip=True)) if price_elem else None
-
                         total_value = (vol_num * price_num) if (vol_num and price_num) else None
 
                         return {**row_data, "Price": price_num, "4w Volume": vol_num, "Total Value": total_value}

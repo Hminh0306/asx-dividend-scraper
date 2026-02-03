@@ -120,7 +120,7 @@ def upload_to_s3(data_results):
     
     try:
         # upload to S3 bucket  
-        bucket_name = os.getenv('S3_BUCKET_NAME')
+        bucket_name = os.getenv('AWS_BUCKET_NAME')
         file_name = "latest_data.json"
 
         json_data = pd.DataFrame(data_results).to_json(orient="records")

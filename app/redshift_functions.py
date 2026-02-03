@@ -141,3 +141,6 @@ def upload_to_s3(data_results):
 
     except Exception as e:
         print(f"❌ S3 Upload Error: {e}")
+    finally:
+        s3_client.close()
+        print("🔌 S3 connection closed.")

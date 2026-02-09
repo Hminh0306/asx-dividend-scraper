@@ -120,7 +120,7 @@ async def scraper():
                     vol_num, price_num = await scraper_single_code(crawler, code)
                     data_item.update({
                         "Price": price_num,
-                        "4W Volume": vol_num,
+                        "4w Volume": vol_num,
                         "Total Value": (vol_num * price_num) if (vol_num and price_num) else None
                     })
                     
@@ -138,7 +138,7 @@ async def scraper():
         # --- PHASE 2: Targeted Retry for Errors ---
         errors = [item for item in results if item['Price'] is None]
         
-        if errors:
+        while errors:
             print(f"\n🕵️ Phase 2: Attempting to fix {len(errors)} failed lookups...")
             for item in errors:
                 # We still use the semaphore logic indirectly by calling the helper

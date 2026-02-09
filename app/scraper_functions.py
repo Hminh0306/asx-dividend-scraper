@@ -144,10 +144,14 @@ async def scraper():
                 # We still use the semaphore logic indirectly by calling the helper
                 async with semaphore:
                     vol, price = await scraper_single_code(crawler, item['Code'])
-                    if price is not None:
+                    if price is not None and price is not None:
                         item['Price'] = price
                         item['4W Volume'] = vol
                         item["Total Value"] = (vol * price) if vol else None
+
+                        # Remove item from errors list
+                        errors.remove(item)
+                        
                         print(f"✅ Fixed {item['Code']}")
                     else:
                         print(f"❌ Failed again: {item['Code']}")

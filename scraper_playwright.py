@@ -2,6 +2,7 @@ import asyncio
 from datetime import datetime
 from app.scraper_functions import scraper
 from app.redshift_functions import upload_to_redshift, upload_to_s3
+from app.export_functions import export_to_downloads
 
 today_str = datetime.now().isoformat()
 
@@ -10,11 +11,10 @@ async def main():
     data_results = await scraper()
     
     if data_results:
-        # 2. Upload data to Redshift
-        upload_to_redshift(data_results)
+        # export_to_downloads(data_results)
 
-        # 3. Upload data to S3 Bucket
         upload_to_s3(data_results)
 
+        
 if __name__ == "__main__":
     asyncio.run(main())

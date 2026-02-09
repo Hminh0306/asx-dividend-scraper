@@ -4,11 +4,14 @@ The *scraper()* function is an asynchronous web crawler designed to extract upco
 --- 
 
 ## Overview
-The function operates in a two-stage process:
+The function operates in a three-stage process:
 
-Index Crawl: Fetches the primary list of upcoming dividends.
+1. Index Crawl: Fetches the primary list of upcoming dividends.
 
-Parallel Detail Crawl: Concurrently visits individual stock pages to gather 4-week average volume and current share prices.
+2. Concurrent Enrichment: Uses an asynchronous semaphore to bulk-fetch real-time price and volume data.
+
+3. Targeted Retry: Identifies failed data points (missing prices) and re-runs those specific codes to ensure 100% data density.
+
 
 --- 
 
@@ -29,7 +32,7 @@ Parallel Detail Crawl: Concurrently visits individual stock pages to gather 4-we
 
 - Defines a CrawlerRunConfig to bypass cache for the main list ensuring fresh data.
 
-### 2. Primary List Extraction
+### 2. Primary List Extraction (Phase 1)
 *The function targets the UPCOMING_URL. It parses the HTML table to extract:*
 
 - Company Name & Ticker Code
@@ -40,13 +43,14 @@ Parallel Detail Crawl: Concurrently visits individual stock pages to gather 4-we
 
 - Franking Percentage
 
-### 3. Concurrent Detail Enrichment
-For every valid stock found, it spawns an asynchronous task (fetch_detail_info).
-- Session IDs: It uses session_idx % 5 to distribute tasks across 5 persistent browser tabs. This significantly reduces the overhead of opening/closing the browser.JS Execution: 
-- Each detail page executes a small JavaScript snippet *(window.scrollBy(0, 300))* to ensure lazy-loaded data attributes like monthAverageVolume are triggered.Calculations:
-- It derives the Total Value (Daily Liquidity) by calculating $Price \times 4W Average Volume$.
+### 3. Concurrent Detail Enrichment (Phase 2)
+For every valid stock found, it spawns an asynchronous task.
+- Semaphore Control: The async with semaphore: block ensures that only 5 detail pages are being requested at any given moment.
+- JS Execution: Each detail page executes a JavaScript snippet window.scrollBy(0, 300) to trigger the population of lazy-loaded attributes like monthAverageVolume.
+- Calculations: It derives the Total Value (Daily Liquidity) using: $$\text{Total Value} = \text{Price} \times \text{4W Average Volume}$$
 
-### 4. Data Standardization
+
+### 4. Error Mitigation (Phase 2)
 Finally, the function appends a last_updated ISO timestamp to every record to ensure data consistency when saved to S3 or Redshift.
 
 --- 

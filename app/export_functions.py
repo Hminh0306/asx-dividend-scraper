@@ -7,10 +7,10 @@ def _get_timestamp(data_results):
     _timestamp = data_results[0]['Last Updated']
     return _timestamp
 
-def export_to_downloads(data_results):
+def export_to_downloads(data_results, name=""):
     _timestamp = _get_timestamp(data_results)
     
-    filename = f"asx-dividend-{_timestamp}.csv"
+    filename = f"asx-dividend-{name}-{_timestamp}.csv"
     filepath = DOWNLOAD_PATH / filename
 
     df = pd.DataFrame(data_results)

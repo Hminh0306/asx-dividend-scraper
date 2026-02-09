@@ -113,7 +113,7 @@ async def scraper():
                         "Franking": clean_percent_to_decimal(cells[5].get_text(strip=True)),
                         "Pay Date": parse_international_date(cells[7].get_text(strip=True)),
                         "Yield": clean_percent_to_decimal(cells[8].get_text(strip=True)),
-                        "Price": None, "4W Volume": None, "Total Value": None # Placeholders
+                        "Price": None, "4w Volume": None, "Total Value": None # Placeholders
                     }
 
                     # Initial attempt to get Price/Vol
@@ -124,7 +124,7 @@ async def scraper():
                         "Total Value": (vol_num * price_num) if (vol_num and price_num) else None
                     })
                     
-                    status = "✅" if price_num else "⏳ (Queued for retry)"
+                    status = "✅" if price_num and vol_num else "⏳ (Queued for retry)"
                     print(f"{status} [{index+1}] {code:5} | Price: {price_num}")
                     return data_item
                 except Exception as e:
@@ -134,27 +134,35 @@ async def scraper():
         tasks = [process_row(row, i) for i, row in enumerate(rows)]
         all_results = await asyncio.gather(*tasks)
         results = [r for r in all_results if r is not None]
-
-        # --- PHASE 2: Targeted Retry for Errors ---
-        errors = [item for item in results if item['Price'] is None]
         
-        while errors:
+        while True:
+            # --- PHASE 2: Targeted Retry for Errors ---
+            errors = [item for item in results if item['Price'] is None or item['4w Volume'] is None]
+
+            if not errors:
+                print("\n💎 All data successfully retrieved!")
+                break
+            
+            # Shuffle to prevent hitting specific IP rate limits
+            random.shuffle(errors)
+
             print(f"\n🕵️ Phase 2: Attempting to fix {len(errors)} failed lookups...")
-            for item in errors:
+            for item in errors[:]:
                 # We still use the semaphore logic indirectly by calling the helper
+                code = item['Code']
                 async with semaphore:
                     vol, price = await scraper_single_code(crawler, item['Code'])
                     if price is not None and vol is not None:
                         item['Price'] = price
                         item['4w Volume'] = vol
-                        item["Total Value"] = (vol * price) if vol else None
+                        item["Total Value"] = (vol * price) if vol and price else None
+
+                        print(f"✅ Fixed {item['Code']}")
 
                         # Remove item from errors list
                         errors.remove(item)
-
-                        print(f"✅ Fixed {item['Code']}")
                     else:
-                        print(f"❌ Failed again: {item['Code']}")
+                        print(f"❌ Failed again: {code}")
                 await asyncio.sleep(1) # Small gap between retries
 
     # --- PHASE 3: Finalizing ---

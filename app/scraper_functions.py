@@ -1,7 +1,10 @@
 import asyncio
+import pandas as pd
 import sys
 import io
+import os
 import random
+import datetime
 from datetime import datetime, timezone
 from crawl4ai import AsyncWebCrawler, CrawlerRunConfig, CacheMode, BrowserConfig
 from bs4 import BeautifulSoup
@@ -40,41 +43,44 @@ def clean_percent_to_decimal(text):
     val = clean_to_number(text)
     return val / 100 if val is not None else None
 
+async def scraper_single_code(crawler, code):
+    """Scraper function for single error code"""
+    detail_url = ASX_URL.format(code.lower())
+    vol_num, price_num = None, None
+
+    for attempt in range(2):
+        detail_result = await crawler.arun(
+            url=detail_url,
+            config=CrawlerRunConfig(
+                cache_mode=CacheMode.BYPASS if attempt > 0 else CacheMode.ENABLED,
+                wait_for="span[data-quoteapi*='monthAverageVolume']",
+                js_code="window.scrollBy(0, 300);",
+            ),
+        )
+
+        if detail_result.success:
+            d_soup = BeautifulSoup(detail_result.html, "html.parser")
+            vol_elem = d_soup.select_one("span[data-quoteapi*='monthAverageVolume']")
+            price_elem = d_soup.select_one("span[data-quoteapi='price']")
+
+            vol_num = clean_to_number(vol_elem.get_text(strip=True)) if vol_elem else None
+            price_num = clean_to_number(price_elem.get_text(strip=True)) if price_elem else None
+
+            if vol_num is not None and price_num is not None:
+                return vol_num, price_num # Success
+
+        await asyncio.sleep(2)
+    return None, None
+
 # --- MAIN SCRAPE FUNCTION --- 
 async def scraper():
-    """
-    Scrape information from marketindex.com.au/upcoming-dividends and individual codes
-    Return list of dictionary containing information of each code in the columns:
-        Code
-        Company
-        Ex_date
-        Pay_date
-        Franking
-        Yield
-        Price
-        Amount
-        4W Volume 
-        Total Value
-        Last_updated
-    """
     results = []
-    today_str = datetime.now().strftime("%Y-%m-%d")
-
-    # Configure the browser once for the entire session
-    browser_config = BrowserConfig(headless=True, verbose=False)
-
-    # Configuration for main list page
-    run_config = CrawlerRunConfig(
-        cache_mode=CacheMode.BYPASS,
-        wait_for="table tbody tr",
-        page_timeout=60000,
-    )
-
-    # Parallel pages fetching - cap at 5 to avoid rate limiting for Github Actions
+    # Limit concurrent detail fetches to 5
     semaphore = asyncio.Semaphore(5)
 
-    async with AsyncWebCrawler(config=browser_config) as crawler:
+    async with AsyncWebCrawler() as crawler:
         print(f"🌐 Fetching main list: {UPCOMING_URL}")
+        run_config = CrawlerRunConfig(cache_mode=CacheMode.BYPASS, wait_for="table tbody tr")
         result = await crawler.arun(url=UPCOMING_URL, config=run_config)
 
         if not result.success:
@@ -83,77 +89,88 @@ async def scraper():
 
         soup = BeautifulSoup(result.html, "html.parser")
         rows = soup.select("table tbody tr")
-        print(f"📊 Found {len(rows)} potential rows.")
+        print(f"📊 Found {len(rows)} potential rows. Starting concurrent scrape...")
 
-        async def fetch_detail_info(row_idx, row_data):
-            """Helper function to fetch detail info with concurrency control"""
+        # --- PHASE 1: Concurrent Bulk Processing ---
+        async def process_row(row, index):
             async with semaphore:
-                code = row_data['Code']
-                detail_url = ASX_URL.format(code.lower())
-                # Pick a session_id for a detail page thread
-                session_id = f"session_{row_idx % 5}" # use 5 persistent browser tabs and cycle through them - reduce RAM usage, speed up crawl, keep cookies/ states if site required
-
-                # Retry logic for detail page
-                for attempt in range(2):
-                    detail_result = await crawler.arun(
-                        url=detail_url,
-                        config=CrawlerRunConfig(
-                            cache_mode=CacheMode.BYPASS if attempt > 0 else CacheMode.ENABLED,
-                            wait_for="span[data-quoteapi*='monthAverageVolume']",
-                            page_timeout=30000,
-                            js_code="window.scrollBy(0, 300);",
-                        ),
-                        session_id = session_id
-                    )
-
-                    if detail_result.success:
-                        d_soup = BeautifulSoup(detail_result.html, "html.parser")
-                        
-                        vol_elem = d_soup.select_one("span[data-quoteapi*='monthAverageVolume']")
-                        price_elem = d_soup.select_one("span[data-quoteapi='price']")
-                        
-                        vol_num = clean_to_number(vol_elem.get_text(strip=True)) if vol_elem else None
-                        price_num = clean_to_number(price_elem.get_text(strip=True)) if price_elem else None
-                        total_value = (vol_num * price_num) if (vol_num and price_num) else None
-
-                        return {**row_data, "Price": price_num, "4w Volume": vol_num, "Total Value": total_value}
+                try:
+                    cells = row.find_all("td")
+                    if not cells: return None
                     
-                    await asyncio.sleep(2 ** attempt) # Exponential backoff
-                return {**row_data, "Price": None, "4w Volume": None, "Total Value": None}
+                    code = cells[0].get_text(strip=True)
+                    amount_val = clean_to_number(cells[4].get_text(strip=True))
+                    # Skip if no dividend amount
+                    if amount_val is None or amount_val == 0: return None
 
-        # 1. Parse the main table first
-        tasks = []
-        for i, row in enumerate(rows):
-            cells = row.find_all("td")
-            if not cells: continue
+                    # Extract primary data
+                    data_item = {
+                        "Crawl Date": datetime.now().strftime("%Y-%m-%d"),
+                        "Code": code,
+                        "Company": cells[1].get_text(strip=True),
+                        "Ex Date": parse_international_date(cells[3].get_text(strip=True)),
+                        "Amount": amount_val,
+                        "Franking": clean_percent_to_decimal(cells[5].get_text(strip=True)),
+                        "Pay Date": parse_international_date(cells[7].get_text(strip=True)),
+                        "Yield": clean_percent_to_decimal(cells[8].get_text(strip=True)),
+                        "Price": None, "4w Volume": None, "Total Value": None # Placeholders
+                    }
+
+                    # Initial attempt to get Price/Vol
+                    vol_num, price_num = await scraper_single_code(crawler, code)
+                    data_item.update({
+                        "Price": price_num,
+                        "4w Volume": vol_num,
+                        "Total Value": (vol_num * price_num) if (vol_num and price_num) else None
+                    })
+                    
+                    status = "✅" if price_num and vol_num else "⏳ (Queued for retry)"
+                    print(f"{status} [{index+1}] {code:5} | Price: {price_num}")
+                    return data_item
+                except Exception as e:
+                    print(f"⚠️ Error processing {index}: {e}")
+                    return None
+
+        tasks = [process_row(row, i) for i, row in enumerate(rows)]
+        all_results = await asyncio.gather(*tasks)
+        results = [r for r in all_results if r is not None]
+        
+        while True:
+            # --- PHASE 2: Targeted Retry for Errors ---
+            errors = [item for item in results if item['Price'] is None or item['4w Volume'] is None]
+
+            if not errors:
+                print("\n💎 All data successfully retrieved!")
+                break
             
-            code = cells[0].get_text(strip=True)
-            amount_val = clean_to_number(cells[4].get_text(strip=True))
-            
-            if amount_val and amount_val > 0:
-                row_data = {
-                    "Crawl Date": today_str,
-                    "Code": code,
-                    "Company": cells[1].get_text(strip=True),
-                    "Ex Date": parse_international_date(cells[3].get_text(strip=True)),
-                    "Amount": amount_val,
-                    "Franking": clean_percent_to_decimal(cells[5].get_text(strip=True)),
-                    "Pay Date": parse_international_date(cells[7].get_text(strip=True)),
-                    "Yield": clean_percent_to_decimal(cells[8].get_text(strip=True)),
-                }
-                # Create a task for concurrent execution
-                tasks.append(fetch_detail_info(i, row_data))
+            # Shuffle to prevent hitting specific IP rate limits
+            random.shuffle(errors)
 
-        # 2. Run all detail fetches concurrently
-        results = await asyncio.gather(*tasks)
+            print(f"\n🕵️ Phase 2: Attempting to fix {len(errors)} failed lookups...")
+            for item in errors[:]:
+                # We still use the semaphore logic indirectly by calling the helper
+                code = item['Code']
+                async with semaphore:
+                    vol, price = await scraper_single_code(crawler, item['Code'])
+                    if price is not None and vol is not None:
+                        item['Price'] = price
+                        item['4w Volume'] = vol
+                        item["Total Value"] = (vol * price) if vol and price else None
 
-    # 3. Add UTC timestamp
-    fixed_time = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ') # Fixing Timezone Trap
+                        print(f"✅ Fixed {item['Code']}")
 
+                        # Remove item from errors list
+                        errors.remove(item)
+                    else:
+                        print(f"❌ Failed again: {code}")
+                await asyncio.sleep(1) # Small gap between retries
+
+    # --- PHASE 3: Finalizing ---
+    fixed_time = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
     for item in results:
         item["Last Updated"] = fixed_time
-    
-    print(f"[CRAWL4AI] Completed scraping at {datetime.now()}")
-    return results
-        
+
+    print(f"\n[CRAWL4AI] Completed at {datetime.now()}")
+    return results # list[dict]
+
 
